@@ -28,7 +28,7 @@ A simple Node.js CLI that recursively scans a directory to gather all non-hidden
 Once installed globally, you can run:
 
 ```bash
-generateMockStructure /path/to/target
+generateMockFileStructure target_folder
 ```
 
 - **`/path/to/target`**: The directory you want to scan for files.
