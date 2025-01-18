@@ -1,0 +1,13 @@
+{
+    "name": "mock-file-structure-generator",
+    "version": "1.0.0",
+    "description": "A CLI tool to generate mockFileStructure.ts from a given folder",
+    "main": "generateMockStructure.js",
+    "bin": {
+      "generateMockStructure": "./generateMockStructure.js"
+    },
+    "keywords": ["utility"],
+    "author": "Sherman Boyd",
+    "license": "MIT"
+  }
+  
