@@ -3,7 +3,6 @@
 const fs = require('fs');
 const path = require('path');
 
-// Check we have an argument for the directory
 if (process.argv.length < 3) {
   console.error('Usage: node generateMockStructure.js <folder>');
   process.exit(1);
@@ -11,35 +10,30 @@ if (process.argv.length < 3) {
 
 const targetDir = process.argv[2];
 
-// A helper to check if a file or directory is "hidden"
+function updateProgress(current, total, message) {
+  const percentage = Math.round((current / total) * 100);
+  process.stdout.clearLine();
+  process.stdout.cursorTo(0);
+  process.stdout.write(`${message}: ${percentage}% [${current}/${total}]`);
+}
+
 function isHidden(name) {
   return name.startsWith('.');
 }
 
-/**
- * Recursively retrieves all non-hidden files from a directory and its subdirectories.
- * @param {string} dir - The directory to scan
- * @param {string} baseDir - The root directory (used to build relative paths)
- * @returns {string[]} An array of relative file paths
- */
 function getAllFiles(dir, baseDir) {
   let fileList = [];
-
-  // Read all entries in the current directory
   const entries = fs.readdirSync(dir, { withFileTypes: true });
 
   for (const entry of entries) {
-    // Skip hidden files or directories (names starting with '.')
     if (isHidden(entry.name)) {
       continue;
     }
 
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      // Recursively read the subdirectory
       fileList = fileList.concat(getAllFiles(fullPath, baseDir));
     } else {
-      // Build a relative path from baseDir
       const relativePath = path.relative(baseDir, fullPath).replace(/\\/g, '/');
       fileList.push(relativePath);
     }
@@ -48,24 +42,53 @@ function getAllFiles(dir, baseDir) {
   return fileList;
 }
 
-// Get all files in the targetDir, ignoring hidden
-const files = getAllFiles(path.resolve(targetDir), path.resolve(targetDir));
+function findShortestUniquePaths(allPaths) {
+  const pathMap = new Map();
+  const total = allPaths.length;
+  
+  allPaths.forEach((fullPath, index) => {
+    let parts = fullPath.split('/');
+    let filename = parts.pop();
+    let uniquePath = filename;
+    let pathIndex = parts.length - 1;
+    
+    const sameNameFiles = allPaths.filter(p => p.endsWith('/' + filename));
+    
+    while (sameNameFiles.length > 1 && pathIndex >= 0) {
+      uniquePath = `${parts[pathIndex]}/${uniquePath}`;
+      const remainingConflicts = sameNameFiles.filter(p => p.endsWith(uniquePath));
+      if (remainingConflicts.length === 1) break;
+      pathIndex--;
+    }
+    
+    pathMap.set(fullPath, uniquePath);
+    updateProgress(index + 1, total, 'Processing unique paths');
+  });
+  
+  process.stdout.write('\n');
+  return pathMap;
+}
 
-// Create the array of objects
+console.log('Scanning files...');
+const files = getAllFiles(path.resolve(targetDir), path.resolve(targetDir));
+console.log(`Found ${files.length} files`);
+
+console.log('Calculating unique paths...');
+const uniquePaths = findShortestUniquePaths(files);
+
+console.log('Generating output...');
 const fileObjects = files
   .map(
     (file) =>
-      `  { uri: 'file:///workspace/${file}', uniquePath: '${file}' }`
+      `  { uri: 'file:///workspace/${file}', uniquePath: '${uniquePaths.get(file)}' }`
   )
   .join(',\n');
 
-// Build the final TS content
 const fileContent = `export const mockFileStructure = [
 ${fileObjects}
 ];
 `;
 
-// Write out the result
 const outputFile = path.join(process.cwd(), 'mockFileStructure.ts');
 fs.writeFileSync(outputFile, fileContent, 'utf8');
 
