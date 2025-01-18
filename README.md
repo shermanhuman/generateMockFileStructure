@@ -5,6 +5,17 @@ A simple Node.js CLI that recursively scans a directory to gather all non-hidden
 ## Features
 
 - Recursively lists **non-hidden** files (ignores files/folders starting with `.`).
+- Excludes these directories: 
+```    
+    'node_modules',
+    'dist',
+    'build',
+    'out',
+    'coverage',
+    '.git',
+    '.vs',
+    '.idea'
+```
 - Builds an array of objects with the structure:
   ```js
   {

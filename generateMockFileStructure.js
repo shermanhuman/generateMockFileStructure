@@ -17,8 +17,26 @@ function updateProgress(current, total, message) {
   process.stdout.write(`${message}: ${percentage}% [${current}/${total}]`);
 }
 
-function isHidden(name) {
-  return name.startsWith('.');
+function shouldExclude(name) {
+  // Exclude hidden files/folders
+  if (name.startsWith('.')) return true;
+  
+  // Common directories to exclude
+  const excludedDirs = [
+    'node_modules',
+    'dist',
+    'build',
+    'out',
+    'coverage',
+    '.git',
+    '.vs',
+    '.idea'
+  ];
+  
+  // Check if it's in our exclude list
+  if (excludedDirs.includes(name)) return true;
+  
+  return false;
 }
 
 function getAllFiles(dir, baseDir) {
@@ -26,7 +44,7 @@ function getAllFiles(dir, baseDir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
 
   for (const entry of entries) {
-    if (isHidden(entry.name)) {
+    if (shouldExclude(entry.name)) {
       continue;
     }
 
